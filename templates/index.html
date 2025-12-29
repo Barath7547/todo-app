@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Todo App</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+    }
+    .container {
+        width: 400px;
+        margin: 40px auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+    }
+    input, select, button {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+    }
+    li {
+        display: flex;
+        justify-content: space-between;
+        background: #eee;
+        padding: 8px;
+        margin-top: 5px;
+        border-radius: 5px;
+    }
+    .done {
+        text-decoration: line-through;
+        color: gray;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Todo List</h2>
+
+    <input id="taskInput" placeholder="New task">
+    <button onclick="addTask()">Add Task</button>
+
+    <select id="filter" onchange="loadTasks()">
+        <option value="all">All</option>
+        <option value="completed">Completed</option>
+        <option value="pending">Pending</option>
+    </select>
+
+    <select id="sort" onchange="loadTasks()">
+        <option value="">No Sorting</option>
+        <option value="az">A → Z</option>
+        <option value="za">Z → A</option>
+    </select>
+
+    <ul id="taskList"></ul>
+</div>
+
+<script>
+function loadTasks() {
+    const filter = document.getElementById('filter').value;
+    const sort = document.getElementById('sort').value;
+
+    fetch(`/tasks?status=${filter}&sort=${sort}`)
+        .then(res => res.json())
+        .then(tasks => {
+            const list = document.getElementById('taskList');
+            list.innerHTML = '';
+
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="${task.completed ? 'done' : ''}"
+                          onclick="toggleTask('${task.name}')">
+                        ${task.name}
+                    </span>
+                    <button onclick="deleteTask('${task.name}')">X</button>
+                `;
+                list.appendChild(li);
+            });
+        });
+}
+
+function addTask() {
+    const input = document.getElementById('taskInput');
+    fetch('/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: input.value})
+    }).then(() => {
+        input.value = '';
+        loadTasks();
+    });
+}
+
+function toggleTask(name) {
+    fetch('/toggle', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name})
+    }).then(loadTasks);
+}
+
+function deleteTask(name) {
+    fetch('/delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name})
+    }).then(loadTasks);
+}
+
+window.onload = loadTasks;
+</script>
+
+</body>
+</html>
